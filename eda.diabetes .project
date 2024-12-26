@@ -104,3 +104,122 @@ reg = LinearRegression().fit(X_train_median_filled, y_train)
 pred = reg.predict(X_test.loc[nonnan_test_indices])
 # Calculate the root mean squared error
 root_mean_squared_error(y_test.loc[nonnan_test_indices],pred)
+for idx, col in enumerate([i for i in diabetes.columns if i != 'sex1']):
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize = (14, 6))
+    sns.histplot(diabetes, x = diabetes[col], kde = True,
+                 color = sns.color_palette("hls", len([i for i in diabetes.columns if i != 'sex1']))[idx], ax = ax1)
+    sns.boxplot(x = diabetes[col], width = 0.4, linewidth = 3, fliersize = 2.5,
+                color = sns.color_palette("hls", len([i for i in diabetes.columns if i != 'sex1']))[idx], ax = ax2)
+    fig.suptitle(f"Histogram and Boxplot of {col}", size = 20, y = 1.02)
+    plt.show()
+# normality test on s3
+stat, p = shapiro(X_train['s3'])
+print('Statistics=%.3f, p=%.3f' % (stat, p))
+# interpret
+alpha = 0.05
+if p > alpha:
+    print('Sample looks normally distributed (fail to reject H0)')
+else:
+    print('Sample does not look normally distributed (reject H0)')
+# normality test on log of s3
+stat, p = ### REPLACE WITH YOUR CODE ###
+print('Statistics=%.3f, p=%.3f' % (stat, p))
+# interpret
+alpha = 0.05
+if p > alpha:
+    print('Sample looks normally distributed (fail to reject H0)')
+else:
+    print('Sample does not look normally distributed (reject H0)')
+# linear regression with median fill, and using the log of 's3'
+
+X_train['s3'] = np.log(X_train['s3'])
+X_test['s3'] = np.log(X_test['s3'])
+
+# Get NAN indices
+nonnan_train_indices = X_train.index[~X_train.isna().max(axis=1)]
+nonnan_test_indices = X_test.index[~X_test.isna().max(axis=1)]
+plt.figure(figsize = (12, 8))
+sns.heatmap(diabetes.corr(), annot = True, cmap = "Spectral", linewidths = 2, linecolor = "#000000", fmt='.3f')
+plt.show()
+# linear regression with median fill, using the log of 's3', removal of outlier from 's2', and the dropping of 's1':
+"""
+# Outlier removal (commented out because `X_train` and `y_train` are already updated)
+X_train_nonoutlier_idx = X_train.index[X_train.s2 < X_train.s2.quantile(0.999)]
+X_train = X_train.loc[X_train_nonoutlier_idx]
+y_train = y_train.loc[X_train_nonoutlier_idx]
+
+# Get NAN indices (commented out because these indices did not change)
+nonnan_train_indices = X_train.index[~X_train.isna().max(axis=1)]
+nonnan_test_indices = X_test.index[~X_test.isna().max(axis=1)]
+"""
+# Get column names that do not include 's1'
+cols_no_s1 = [i for i in X_train.columns if i != 's1']
+
+# Initialize the simple imputer
+imp_median = SimpleImputer(missing_values=np.nan, strategy='median')
+# Fit the simple imputer using the training data
+imp_median.fit(X_train.loc[:, cols_no_s1])
+# Actually median fill the training data
+X_train_median_filled = imp_median.transform(X_train.loc[:, cols_no_s1])
+
+# Fit an instance of `LinearRegression`
+reg = LinearRegression().fit(X_train_median_filled, y_train)
+# Generate predictions
+pred = reg.predict(X_test.loc[nonnan_test_indices, cols_no_s1])
+# Calculate the root mean squared error
+root_mean_squared_error(y_test.loc[nonnan_test_indices],pred)
+# This code may take a minute or two to finish running
+sns.pairplot(diabetes)
+plt.show()
+# This code may take a minute or two to finish running
+fast_eda(diabetes)
+# Load the data set from sklearn
+iris_sklearn = load_iris()
+
+# Extract the data and target labels as a numpy array
+iris_npy = np.concatenate([iris_sklearn['data'], np.atleast_2d(iris_sklearn['target']).T], axis=1)
+
+# Define column names
+col_names = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'target']
+
+# Convert the numpy array to a pandas dataframe with column names
+iris = pd.DataFrame(iris_npy, columns=col_names)
+
+# Print a description of the dataset
+print(iris_sklearn['DESCR'])
+iris['target'].sample(5)
+class_names = dict(zip(list(map(float, range(len(iris_sklearn['target_names'])))), iris_sklearn['target_names']))
+print(class_names)
+plt.axis('equal')
+sns.scatterplot(iris, x='petal_width', y='sepal_width', hue='target', palette=sns.color_palette("hls", iris['target'].nunique()))
+plt.show()
+for idx, col in enumerate(['sepal_length']):
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize = (14, 6))
+    sns.histplot(iris, x = iris[col], kde = True,
+                 color = sns.color_palette("hls", iris['target'].nunique()), ax = ax1, hue = 'target')
+    sns.boxplot(x = iris[col], width = 0.4, linewidth = 3, fliersize = 2.5,
+                color = sns.color_palette("hls", iris['target'].nunique())[idx], ax = ax2)
+    fig.suptitle(f"Histogram and Boxplot of {col}", size = 20, y = 1.02)
+    plt.show()
+# Get value counts
+vc = ### REPLACE WITH YOUR CODE ###
+
+# Draw a pie chart using value counts and the `autopct_format` format
+_ = plt.pie(vc)
+# Inspired by:
+#https://stackoverflow.com/questions/73616867/pie-chart-from-count-of-values-showing-the-percentage/73617021#73617021
+
+# Define a function to format value counts into percentages
+def autopct_format(values):
+        def my_format(pct):
+            total = sum(values)
+            val = int(round(pct*total/100.0))
+            return '{:.1f}%\n({v:d})'.format(pct, v=val)
+        return my_format
+
+# Get value counts
+vc = iris['target'].value_counts()
+
+# Draw a pie chart using value counts and the `autopct_format` format
+_ = plt.pie(vc, labels = vc.rename(class_names).index, autopct=autopct_format(vc))
+
